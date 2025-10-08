@@ -100,7 +100,7 @@ function ProductsList() {
             </P14Regular>
           </DFlexColumn>
           <DFlex className="gap-4">
-            <Button onClick={handleShow}>Tambah Product</Button>
+            <Button variant="primary" onClick={handleShow}>Tambah Product</Button>
           </DFlex>
         </div>
         <Table>
