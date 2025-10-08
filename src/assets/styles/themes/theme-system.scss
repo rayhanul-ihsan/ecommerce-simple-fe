@@ -1,0 +1,81 @@
+// -----------------------------------------
+// Base Theme Map
+// -----------------------------------------
+$colors: (
+  'mode': (
+    'light': (
+      'Primary': #FF7900,
+      'Secondary': #0D5EBA
+    ),
+    'dark': (
+      'Primary': #FF8C33,
+      'Secondary': #FF7900
+    ),
+  )) !default;
+
+
+// Persentase lighten (untuk 10–400)
+$percentage-color-hue-lighten: (
+  '10': 95%,
+  '50': 90%,
+  '100': 69%,
+  '200': 54%,
+  '300': 33%,
+  '400': 20%,
+  ) !default;
+
+
+// Persentase darken (untuk 600–900)
+$percentage-color-hue-darken: (
+  '600': 9%,
+  '700': 29%,
+  '800': 45%,
+  '900': 58%,
+  ) !default;
+
+
+// -----------------------------------------
+// Function get-css-var()
+// -----------------------------------------
+@function get-css-var($name, $level: null) {
+  @if $level ==null {
+    @return unquote("var(--#{$name})"
+  );
+}
+
+@else {
+  @return unquote("var(--#{$name}-#{$level})");
+}
+}
+
+
+// -----------------------------------------
+// Mixin generate-color-vars()
+// -----------------------------------------
+@mixin generate-color-vars() {
+  @each $mode, $mapColors in map-get($colors, 'mode') {
+    [theme-mode="#{$mode}"] {
+      @each $name, $hex in $mapColors {
+        // Base 500
+        --#{$name}-500: #{$hex};
+        --#{$name}: #{$hex}; // alias
+
+        // Lighten 10–400
+        @each $key, $percent in $percentage-color-hue-lighten {
+          --#{$name}-#{$key}: #{mix(white, $hex, $percent)};
+        }
+
+        // Darken 600–900
+        @each $key, $percent in $percentage-color-hue-darken {
+          --#{$name}-#{$key}: #{mix(black, $hex, $percent)};
+        }
+      }
+    }
+  }
+}
+
+
+// -----------------------------------------
+// Generate variables
+// -----------------------------------------
+@include generate-color-vars();
