@@ -52,6 +52,7 @@
   "devDependencies": {
     "@types/lodash": "^4.17.20",
     "@types/react-bootstrap": "^1.0.1",
+    "sass": "^1.93.2",
     "styled-components": "^6.1.19"
   }
 }
