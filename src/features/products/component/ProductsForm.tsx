@@ -22,6 +22,7 @@ import SelectStaticNonForm from "../../../components/select/SelectStaticNonForm"
 import FormSelectControl from "../../../components/input/FormSelectControl";
 import styled from "styled-components";
 import FormUpload from "../../../components/input/FormUpload";
+import ModalSucces from "../../../components/modal/ModalSucces";
 
 interface Props {
   callbackSubmit: (value: any) => void;
