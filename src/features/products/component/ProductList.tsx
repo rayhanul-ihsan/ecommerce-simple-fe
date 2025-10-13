@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Button, Container, Modal, Table } from "react-bootstrap";
+import {
+  Button,
+  Card,
+  Col,
+  Container,
+  Modal,
+  Row,
+  Table,
+} from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import {
   IParamsGetProduct,
@@ -8,11 +16,12 @@ import {
 import { deleteProduct, getProducts } from "../productsAPI";
 import styled from "styled-components";
 import {
+  DFlex,
   DFlexALignCenter,
   DFlexColumn,
   DFlexJustifyBetween,
 } from "../../../styled/flex.styled";
-import { P14Regular } from "../../../styled/text.styled";
+import { P14Regular, P18High, PClamp } from "../../../styled/text.styled";
 import ProductsForm from "./ProductsForm";
 import FormSelectControl from "../../../components/input/FormSelectControl";
 import ReactPaginate from "react-paginate";
@@ -43,7 +52,7 @@ function ProductsList() {
   });
 
   const handleClose = () => setShow(false);
-
+  const handleShow = () => setShow(true);
   useEffect(() => {
     const params: IParamsGetProduct = {
       skip: 0,
@@ -78,7 +87,9 @@ function ProductsList() {
     }
 
     if (categoryFilter) {
-      filtered = filtered.filter((product) => product.description === categoryFilter);
+      filtered = filtered.filter(
+        (product) => product.description === categoryFilter
+      );
     }
 
     if (statusFilter) {
@@ -90,13 +101,13 @@ function ProductsList() {
       const aValue = a[sortBy as keyof IProduct];
       const bValue = b[sortBy as keyof IProduct];
 
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
+      if (typeof aValue === "string" && typeof bValue === "string") {
         return sortOrder === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
 
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
+      if (typeof aValue === "number" && typeof bValue === "number") {
         return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
       }
 
@@ -116,7 +127,9 @@ function ProductsList() {
     setCurrentPage(selected);
   };
 
-  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleItemsPerPageChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(0);
   };
@@ -128,7 +141,9 @@ function ProductsList() {
 
   const pageCount = Math.ceil(totalItems / itemsPerPage);
 
-  const categories = Array.from(new Set(products.map((p) => p.description).filter(Boolean)));
+  const categories = Array.from(
+    new Set(products.map((p) => p.description).filter(Boolean))
+  );
   const categoryOptions = categories.map((cat) => ({ label: cat, value: cat }));
 
   const statusOptions = [
@@ -171,137 +186,173 @@ function ProductsList() {
 
   return (
     <>
-      <Container className="mt-5">
-        <FilterContainer>
-          <SearchInputWrapper>
-            <SearchIcon>
-              <FiSearchIcon />
-            </SearchIcon>
-            <SearchInput
-              type="text"
-              placeholder="Cari produk"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </SearchInputWrapper>
+      <ContainerStyled className="mt-5">
+        <div className="d-flex justify-content-between">
+          <DFlexColumn className="mb-4">
+            <P18High className="m-0 fw-bold">Daftar Product</P18High>
+            <P14Regular className="m-0 text-muted">
+              Lihat semua produk yang tersedia di inventaris.
+            </P14Regular>
+          </DFlexColumn>
+          <DFlex className="gap-4">
+            <Button variant="primary" onClick={handleShow}>
+              Tambah Product
+            </Button>
+          </DFlex>
+        </div>
+        <Card className="mb-5">
+          <Row className="p-4">
+            <Col md={6}>
+              <Row className="g-2">
+                <Col md={4}>
+                  <SearchInputWrapper>
+                    <SearchIcon>
+                      <FiSearchIcon />
+                    </SearchIcon>
+                    <SearchInput
+                      type="text"
+                      placeholder="Cari produk"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </SearchInputWrapper>
+                </Col>
+                <Col md={4}>
+                  <FormSelectControl
+                    placeholder="Semua Kategori"
+                    options={categoryOptions}
+                    version="simple"
+                    style={{ minWidth: "180px" }}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      setCategoryFilter(e.target.value)
+                    }
+                  />
+                </Col>
+                <Col md={4}>
+                  <FormSelectControl
+                    placeholder="Semua Status"
+                    options={statusOptions}
+                    version="simple"
+                    style={{ minWidth: "160px" }}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      setStatusFilter(e.target.value)
+                    }
+                  />
+                </Col>
+              </Row>
+            </Col>
+            <Col md={6} className="d-flex justify-content-end">
+              <SortContainer>
+                <span style={{ marginRight: "8px", fontSize: "14px" }}>
+                  Urutkan:
+                </span>
+                <FormSelectControl
+                  placeholder="Nama Produk"
+                  options={sortOptions}
+                  version="simple"
+                  style={{ minWidth: "150px" }}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setSortBy(e.target.value)
+                  }
+                />
+                <SortButton
+                  onClick={() =>
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                  }
+                >
+                  {sortOrder === "asc" ? "↑" : "↓"}{" "}
+                  {sortOrder === "asc" ? "Asc" : "Desc"}
+                </SortButton>
+              </SortContainer>
+            </Col>
+          </Row>
 
-          <FormSelectControl
-            placeholder="Semua Kategori"
-            options={categoryOptions}
-            version="simple"
-            style={{ minWidth: "180px" }}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              setCategoryFilter(e.target.value)
-            }
-          />
-
-          <FormSelectControl
-            placeholder="Semua Status"
-            options={statusOptions}
-            version="simple"
-            style={{ minWidth: "160px" }}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              setStatusFilter(e.target.value)
-            }
-          />
-
-          <SortContainer>
-            <span style={{ marginRight: "8px", fontSize: "14px" }}>Urutkan:</span>
-            <FormSelectControl
-              placeholder="Nama Produk"
-              options={sortOptions}
-              version="simple"
-              style={{ minWidth: "150px" }}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setSortBy(e.target.value)
-              }
-            />
-            <SortButton
-              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            >
-              {sortOrder === "asc" ? "↑" : "↓"} {sortOrder === "asc" ? "Asc" : "Desc"}
-            </SortButton>
-          </SortContainer>
-        </FilterContainer>
-
-        <StyledTable>
-          <thead>
-            <tr>
-              <th style={{ width: "40%" }}>Nama Produk</th>
-              <th style={{ width: "15%" }}>Kategori</th>
-              <th style={{ width: "10%" }}>Stok</th>
-              <th style={{ width: "15%" }}>Harga (Rp)</th>
-              <th style={{ width: "10%" }}>Status</th>
-              <th style={{ width: "10%", textAlign: "center" }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedProducts.map((product, index: number) => (
-              <React.Fragment key={product.id}>
-                <tr>
-                  <td>
-                    <ProductNameCell>
-                      <ProductImage src={`/avatar.svg`} alt={product.title} />
-                      <span>{product.title}</span>
-                    </ProductNameCell>
-                  </td>
-                  <td>{product.description || "Meja"}</td>
-                  <td>{product.id || 0}</td>
-                  <td>{product.price?.toLocaleString("id-ID") || "0"}</td>
-                  <td>
-                    <StatusBadge status={product.status ? "aktif" : "nonaktif"}>
-                      {product.status ? "Aktif" : "Nonaktif"}
-                    </StatusBadge>
-                  </td>
-                  <td>
-                    <ActionCell>
-                      <ActionButton
-                        onClick={() => navigate(String(product?.id))}
+          <StyledTable>
+            <thead>
+              <tr>
+                <th style={{ width: "20%" }}>Nama Produk</th>
+                <th style={{ width: "15%" }}>Kategori</th>
+                <th style={{ width: "10%" }}>Stok</th>
+                <th style={{ width: "15%" }}>Harga (Rp)</th>
+                <th style={{ width: "10%" }}>Status</th>
+                <th style={{ width: "10%", textAlign: "center" }}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedProducts.map((product, index: number) => (
+                <React.Fragment key={product.id}>
+                  <tr>
+                    <td>
+                      <ProductNameCell>
+                        <ProductImage src={`/avatar.svg`} alt={product.title} />
+                        <span>{product.title}</span>
+                      </ProductNameCell>
+                    </td>
+                    <td className="max-w-[100px]">
+                      <PClamp>{product.description || "Meja"}</PClamp>
+                    </td>
+                    <td>{product.id || 0}</td>
+                    <td>{product.price?.toLocaleString("id-ID") || "0"}</td>
+                    <td>
+                      <StatusBadge
+                        status={product.status ? "aktif" : "nonaktif"}
                       >
-                        Lihat Detail
-                      </ActionButton>
-                      <MoreButton>...</MoreButton>
-                    </ActionCell>
-                  </td>
-                </tr>
-              </React.Fragment>
-            ))}
-          </tbody>
-        </StyledTable>
+                        {product.status ? "Aktif" : "Nonaktif"}
+                      </StatusBadge>
+                    </td>
+                    <td>
+                      <ActionCell>
+                        <ActionButton
+                          onClick={() => navigate(String(product?.id))}
+                        >
+                          Lihat Detail
+                        </ActionButton>
+                        <MoreButton>...</MoreButton>
+                      </ActionCell>
+                    </td>
+                  </tr>
+                </React.Fragment>
+              ))}
+            </tbody>
+          </StyledTable>
 
-        <PaginationContainer>
-          <PaginationInfo>
-            <span>Menampilkan</span>
-            <ItemsPerPageSelect onChange={handleItemsPerPageChange} value={itemsPerPage}>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </ItemsPerPageSelect>
-            <span>Dari {totalItems} Data</span>
-          </PaginationInfo>
+          <PaginationContainer>
+            <PaginationInfo>
+              <span>Menampilkan</span>
+              <ItemsPerPageSelect
+                onChange={handleItemsPerPageChange}
+                value={itemsPerPage}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </ItemsPerPageSelect>
+              <span>Dari {totalItems} Data</span>
+            </PaginationInfo>
 
-          <ReactPaginate
-            previousLabel="‹"
-            nextLabel="›"
-            pageCount={pageCount}
-            onPageChange={handlePageChange}
-            containerClassName="pagination"
-            pageClassName="page-item"
-            pageLinkClassName="page-link"
-            previousClassName="page-item"
-            previousLinkClassName="page-link"
-            nextClassName="page-item"
-            nextLinkClassName="page-link"
-            activeClassName="active"
-            breakLabel="..."
-            breakClassName="page-item"
-            breakLinkClassName="page-link"
-            forcePage={currentPage}
-            pageRangeDisplayed={3}
-            marginPagesDisplayed={2}
-          />
-        </PaginationContainer>
-      </Container>
+            <ReactPaginate
+              previousLabel="‹"
+              nextLabel="›"
+              pageCount={pageCount}
+              onPageChange={handlePageChange}
+              containerClassName="pagination"
+              pageClassName="page-item"
+              pageLinkClassName="page-link"
+              previousClassName="page-item"
+              previousLinkClassName="page-link"
+              nextClassName="page-item"
+              nextLinkClassName="page-link"
+              activeClassName="active"
+              breakLabel="..."
+              breakClassName="page-item"
+              breakLinkClassName="page-link"
+              forcePage={currentPage}
+              pageRangeDisplayed={3}
+              marginPagesDisplayed={2}
+            />
+          </PaginationContainer>
+        </Card>
+      </ContainerStyled>
 
       <Modal show={show} onHide={handleClose} size="lg">
         <Modal.Header>
@@ -351,22 +402,11 @@ function ProductsList() {
 
 export default ProductsList;
 
-export const ContainerStyled = styled(Container)`
+export const ContainerStyled = styled(DFlexColumn)`
   width: 100%;
   background: transparent !important;
   padding: 32px 64px !important;
   margin: 0;
-`;
-
-const FilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
 `;
 
 const SearchInputWrapper = styled.div`
@@ -429,7 +469,6 @@ const StyledTable = styled(Table)`
   background: white;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
   thead {
     background: #f9fafb;
@@ -556,11 +595,10 @@ const PaginationContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
   padding: 16px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  background: transparent !important;
+  /* border-radius: 8px;
+  border: 1px solid #e5e7eb; */
 
   .pagination {
     display: flex;
