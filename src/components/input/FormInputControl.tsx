@@ -1,6 +1,5 @@
-
 import React from 'react'
-import { Form } from 'react-bootstrap'
+import { Form, InputGroup } from 'react-bootstrap'
 import { UseFormRegisterReturn } from 'react-hook-form'
 import styled from 'styled-components'
 import RequiredInfo from '../Info/RequiredInfo'
@@ -37,6 +36,11 @@ const FormInputControl: React.FC<{
   onKeyDown?: any
   style?: any
   defaultValue?: any
+  // New props for prefix/suffix
+  prefix?: string | React.ReactNode
+  suffix?: string | React.ReactNode
+  prefixClassName?: string
+  suffixClassName?: string
 }> = ({
   labelName,
   required = false,
@@ -66,6 +70,10 @@ const FormInputControl: React.FC<{
   disabled = false,
   style,
   defaultValue,
+  prefix,
+  suffix,
+  prefixClassName = '',
+  suffixClassName = '',
 }) => {
   const handleOnKeyUp = (e: any) => {
     if (onKeyUp) {
@@ -79,6 +87,53 @@ const FormInputControl: React.FC<{
     }
   }
 
+  const renderFormControl = () => {
+    const formControl = (
+      <Form.Control
+        type={type ?? 'text'}
+        {...register}
+        as={as}
+        rows={rows}
+        isInvalid={isInvalid}
+        maxLength={maxlength}
+        placeholder={placeholder ?? ''}
+        autoFocus={autoFocus}
+        onKeyUp={handleOnKeyUp}
+        onKeyDown={handleKeyDown}
+        max={max}
+        min={min}
+        size={size}
+        className={classNameInput}
+        {...additionalOptions}
+        readOnly={readOnly}
+        disabled={disabled}
+        style={style}
+        defaultValue={defaultValue}
+      />
+    )
+
+    // If prefix or suffix exists, wrap with InputGroup
+    if (prefix || suffix) {
+      return (
+        <InputGroup hasValidation={isInvalid}>
+          {prefix && (
+            <InputGroup.Text className={prefixClassName}>
+              {prefix}
+            </InputGroup.Text>
+          )}
+          {formControl}
+          {suffix && (
+            <InputGroup.Text className={suffixClassName}>
+              {suffix}
+            </InputGroup.Text>
+          )}
+        </InputGroup>
+      )
+    }
+
+    return formControl
+  }
+
   if (formGroup)
     return (
       <Form.Group as={formGroupAs} className={className}>
@@ -89,27 +144,7 @@ const FormInputControl: React.FC<{
           </Form.Label>
         )}
         <WarpInput className={classNameControl}>
-          <Form.Control
-            type={type ?? 'text'}
-            {...register}
-            as={as}
-            rows={rows}
-            isInvalid={isInvalid}
-            maxLength={maxlength}
-            placeholder={placeholder ?? ''}
-            autoFocus={autoFocus}
-            onKeyUp={handleOnKeyUp}
-            onKeyDown={handleKeyDown}
-            max={max}
-            min={min}
-            size={size}
-            className={classNameInput}
-            {...additionalOptions}
-            readOnly={readOnly}
-            disabled={disabled}
-            style={style}
-            defaultValue={defaultValue}
-          />
+          {renderFormControl()}
           {errorDiv && <Form.Control.Feedback type="invalid">{message}</Form.Control.Feedback>}
         </WarpInput>
       </Form.Group>
@@ -117,24 +152,28 @@ const FormInputControl: React.FC<{
   else
     return (
       <>
-        <Form.Control
-          type={type ?? 'text'}
-          {...register}
-          as={as}
-          rows={rows}
-          isInvalid={isInvalid}
-          placeholder={placeholder ?? ''}
-          onKeyUp={handleOnKeyUp}
-          max={max}
-          min={min}
-          size={size}
-          className={`${className} ${classNameInput}`}
-          {...additionalOptions}
-          readOnly={readOnly}
-          disabled={disabled}  
-          style={style}
-          defaultValue={defaultValue}
-        />
+        {prefix || suffix ? (
+          renderFormControl()
+        ) : (
+          <Form.Control
+            type={type ?? 'text'}
+            {...register}
+            as={as}
+            rows={rows}
+            isInvalid={isInvalid}
+            placeholder={placeholder ?? ''}
+            onKeyUp={handleOnKeyUp}
+            max={max}
+            min={min}
+            size={size}
+            className={`${className} ${classNameInput}`}
+            {...additionalOptions}
+            readOnly={readOnly}
+            disabled={disabled}  
+            style={style}
+            defaultValue={defaultValue}
+          />
+        )}
         {errorDiv && formGroup && <Form.Control.Feedback type="invalid">{message}</Form.Control.Feedback>}
       </>
     )

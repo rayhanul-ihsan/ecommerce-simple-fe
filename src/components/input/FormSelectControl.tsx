@@ -1,5 +1,6 @@
 import React from "react";
 import { Form } from "react-bootstrap";
+import RequiredInfo from "../Info/RequiredInfo";
 
 interface Option {
   label: string;
@@ -18,6 +19,7 @@ interface Props {
   className?: string;
   version?: "default" | "simple";
   style?: any;
+  required?: boolean;
 }
 
 export default function FormSelectControl({
@@ -30,14 +32,19 @@ export default function FormSelectControl({
   defaultValue,
   className = "",
   version = "default",
-    style,
+  style,
+  required = false,
   ...rest
 }: Props) {
   return (
     <>
       {version === "default" ? (
         <Form.Group className={`${className}`}>
-          {labelName && <Form.Label>{labelName}</Form.Label>}
+          {labelName && (
+            <Form.Label>
+              {labelName} {required && <RequiredInfo />}
+            </Form.Label>
+          )}
           <Form.Select
             {...register}
             isInvalid={isInvalid}

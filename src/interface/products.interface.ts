@@ -3,6 +3,8 @@ export interface IProduct {
   title: string;
   description: string
   price: number;
+  status?: boolean
+  unit?: string
 }
 
 export interface IParamsGetProduct {

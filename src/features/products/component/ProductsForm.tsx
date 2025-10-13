@@ -41,12 +41,15 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<IProduct>({
     resolver: yupResolver(validationSchema) as any,
     defaultValues: { title: "", description: "", price: 10 },
   });
-
+  const watchStatus = watch("status");
+  const watchUnit = watch("unit");
+  console.log({ watchStatus, watchUnit });
   useEffect(() => {
     if (dataSelected) reset(dataSelected);
   }, [dataSelected]);
@@ -85,6 +88,7 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                   className="mb-0"
                   // isInvalid={errors.name}
                   // message={errors.name?.message}
+                  required
                 />
               </Col>
               <Col md={6}>
@@ -94,6 +98,7 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                   // register={register("category")}
                   // isInvalid={errors.category}
                   // message={errors.category?.message}
+                  required
                   options={[
                     { label: "Elektronik", value: "elektronik" },
                     { label: "Fashion", value: "fashion" },
@@ -117,8 +122,10 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                 <FormInputControl
                   labelName="Harga Satuan"
                   // register={register("name")}
+                  prefix="Rp"
                   type="number"
                   className="mb-0"
+                  prefixClassName="fw-semibold"
                   defaultValue={0}
                   // isInvalid={errors.name}
                   // message={errors.name?.message}
@@ -139,9 +146,7 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                   </Col>
                   <Col md={5}>
                     <FormSelectControl
-                      // register={register("category")}
-                      // isInvalid={errors.category}
-                      // message={errors.category?.message}
+                      register={register("unit")}
                       version="simple"
                       style={{ marginTop: "32px" }}
                       defaultValue={{ label: "unit", value: "unit" }}
@@ -167,20 +172,39 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                       </DFlexColumn>
                     </Col>
                     <Col md={4}>
-                      <DFlex style={{ marginTop: "18px" }}>
-                        <P14Medium className="m-0">Nonaktif</P14Medium>
+                      <DFlexJustifyEnd style={{ marginTop: "18px" }}>
+                        {watchStatus === true ? (
+                          <P14Medium className="m-0">Aktif</P14Medium>
+                        ) : (
+                          <P14Medium className="m-0">Nonaktif</P14Medium>
+                        )}
                         <SwitchStyled
                           type="switch"
                           id="custom-switch"
-                          // {...register("status")}
+                          {...register("status")}
                           // defaultChecked={dataSelected?.status === "active" ? true : false}
                           className="ms-2"
                         />
-                      </DFlex>
+                      </DFlexJustifyEnd>
                     </Col>
                   </Row>
                 </Card>
               </Col>
+              {watchStatus === true && (
+                <Col md={12}>
+                  <FormInputControl
+                    labelName="Produk Menipis"
+                    // register={register("name")}
+                    type="number"
+                    className="mb-0"
+                    defaultValue={0}
+                    suffixClassName="text-capitalize"
+                    // isInvalid={errors.name}
+                    // message={errors.name?.message}
+                    suffix={watchUnit}
+                  />
+                </Col>
+              )}
             </Row>
           </Col>
         </Row>
