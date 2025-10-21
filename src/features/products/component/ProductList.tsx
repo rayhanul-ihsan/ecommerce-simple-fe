@@ -26,25 +26,34 @@ import ProductsForm from "./ProductsForm";
 import FormSelectControl from "../../../components/input/FormSelectControl";
 import ReactPaginate from "react-paginate";
 import FiSearchIcon from "../../../assets/icons/FiSearchIcon";
+import { useSelector } from "react-redux";
+import { nanoid } from "nanoid";
+import { ActionButton, ActionCell, ContainerStyled, ItemsPerPageSelect, MoreButton, PaginationContainer, PaginationInfo, ProductImage, ProductNameCell, SearchIcon, SearchInput, SearchInputWrapper, SortButton, SortContainer, StatusBadge, StyledTable } from "../../../styled/productList.styled";
 
 function ProductsList() {
   const navigate = useNavigate();
-
+  const { loginUser } = useSelector((state: any) => state.auth);
+  console.log('loginuser redux', loginUser);
+  
   const [products, setProducts] = useState<IProduct[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<IProduct[]>([]);
   const [show, setShow] = useState(false);
   const [dataSelected, setDataSelected] = useState<IProduct>();
-  const triggerGet = useRef<number>(0);
+  const [refreshKey, setRefreshKey] = useState(nanoid());
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [sortBy, setSortBy] = useState("title");
+  const [sortBy, setSortBy] = useState("nama");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    size: 10,
+    total: 0,
+    pages: 1
+  });
 
   const [modalDelete, setModalDelete] = useState<any>({
     show: false,
@@ -53,114 +62,82 @@ function ProductsList() {
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+
   useEffect(() => {
-    const params: IParamsGetProduct = {
-      skip: 0,
-      limit: 100,
-      sortBy: "id",
-      order: "asc",
-    };
-    getProductData(params);
+    getProductData();
+  }, [refreshKey, currentPage, itemsPerPage, searchTerm, categoryFilter, statusFilter, sortBy, sortOrder]);
 
-    return () => {
-      console.log("clean");
-    };
-  }, [triggerGet]);
-
-  const getProductData = async (params: IParamsGetProduct) => {
+  const getProductData = async () => {
     try {
+      // Build search_by array based on active filters
+      const searchBy: string[] = [];
+      if (searchTerm) searchBy.push('nama');
+      if (categoryFilter) searchBy.push('kategori');
+      if (statusFilter) searchBy.push('status');
+
+      const params: IParamsGetProduct = {
+        search: searchTerm || categoryFilter || statusFilter || '',
+        search_by: searchBy.length > 0 ? searchBy : [],
+        operator: 'and',
+        orderBy: sortBy,
+        order: sortOrder,
+        page: currentPage,
+        size: itemsPerPage
+      };
+
       const request: any = await getProducts({ params: params });
-      setProducts(request.products);
-      setTotalItems(request.products.length);
+      
+      // Handle response structure { data: [...], pagination: {...} }
+      if (request && request.data) {
+        setProducts(request.data);
+        
+        // Update pagination info from server
+        if (request.pagination) {
+          setPagination(request.pagination);
+        }
+      } else {
+        // Fallback if structure is different
+        setProducts([]);
+        setPagination({ page: 1, size: 10, total: 0, pages: 1 });
+      }
     } catch (error) {
       console.log(error);
+      setProducts([]);
+      setPagination({ page: 1, size: 10, total: 0, pages: 1 });
     }
   };
 
-  const applyFiltersAndSort = useCallback(() => {
-    let filtered = [...products];
-
-    if (searchTerm) {
-      filtered = filtered.filter((product) =>
-        product.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (categoryFilter) {
-      filtered = filtered.filter(
-        (product) => product.description === categoryFilter
-      );
-    }
-
-    if (statusFilter) {
-      const isActive = statusFilter === "Aktif";
-      filtered = filtered.filter((product) => product.status === isActive);
-    }
-
-    filtered.sort((a, b) => {
-      const aValue = a[sortBy as keyof IProduct];
-      const bValue = b[sortBy as keyof IProduct];
-
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortOrder === "asc"
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
-      }
-
-      return 0;
-    });
-
-    setFilteredProducts(filtered);
-    setTotalItems(filtered.length);
-    setCurrentPage(0);
-  }, [products, searchTerm, categoryFilter, statusFilter, sortBy, sortOrder]);
-
-  useEffect(() => {
-    applyFiltersAndSort();
-  }, [applyFiltersAndSort]);
-
   const handlePageChange = ({ selected }: { selected: number }) => {
-    setCurrentPage(selected);
+    setCurrentPage(selected + 1); // ReactPaginate uses 0-based index, API uses 1-based
   };
 
   const handleItemsPerPageChange = (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     setItemsPerPage(Number(e.target.value));
-    setCurrentPage(0);
+    setCurrentPage(1); // Reset to first page
   };
 
-  const paginatedProducts = filteredProducts.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage
-  );
-
-  const pageCount = Math.ceil(totalItems / itemsPerPage);
-
+  // Get unique categories from products
   const categories = Array.from(
-    new Set(products.map((p) => p.description).filter(Boolean))
+    new Set(products.map((p) => p.category).filter(Boolean))
   );
   const categoryOptions = categories.map((cat) => ({ label: cat, value: cat }));
 
   const statusOptions = [
-    { label: "Aktif", value: "Aktif" },
-    { label: "Menipis", value: "Menipis" },
-    { label: "Nonaktif", value: "Nonaktif" },
+    { label: "Aktif", value: "aktif" },
+    { label: "Nonaktif", value: "nonaktif" },
   ];
 
   const sortOptions = [
-    { label: "Nama Produk", value: "title" },
-    { label: "Kategori", value: "description" },
-    { label: "Harga", value: "price" },
-    { label: "Stok", value: "id" },
+    { label: "Nama Produk", value: "nama" },
+    { label: "Kategori", value: "categori" },
+    { label: "Harga", value: "harga" },
+    { label: "Stok", value: "stokawal" },
   ];
 
   const callbackSubmit = (values: IProduct) => {
-    triggerGet.current = Date.now();
+    setRefreshKey(nanoid()); 
     handleClose();
   };
 
@@ -180,8 +157,27 @@ function ProductsList() {
     try {
       const resp = await deleteProduct(modalDelete?.data?.id);
       console.log(resp);
+      setRefreshKey(nanoid()); // Generate new unique ID to trigger refresh
       handleCloseModalDelete();
-    } catch (error) {}
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Helper function to get status label
+  const getStatusLabel = (status: any) => {
+    if (typeof status === 'string') {
+      return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+    return status ? "Aktif" : "Nonaktif";
+  };
+
+  // Helper function to get status type for badge
+  const getStatusType = (status: any): string => {
+    if (typeof status === 'string') {
+      return status.toLowerCase();
+    }
+    return status ? "aktif" : "nonaktif";
   };
 
   return (
@@ -213,7 +209,10 @@ function ProductsList() {
                       type="text"
                       placeholder="Cari produk"
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // Reset to first page on search
+                      }}
                     />
                   </SearchInputWrapper>
                 </Col>
@@ -223,9 +222,10 @@ function ProductsList() {
                     options={categoryOptions}
                     version="simple"
                     style={{ minWidth: "180px" }}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                      setCategoryFilter(e.target.value)
-                    }
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                      setCategoryFilter(e.target.value);
+                      setCurrentPage(1); // Reset to first page on filter
+                    }}
                   />
                 </Col>
                 <Col md={4}>
@@ -234,9 +234,10 @@ function ProductsList() {
                     options={statusOptions}
                     version="simple"
                     style={{ minWidth: "160px" }}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                      setStatusFilter(e.target.value)
-                    }
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1); // Reset to first page on filter
+                    }}
                   />
                 </Col>
               </Row>
@@ -275,44 +276,61 @@ function ProductsList() {
                 <th style={{ width: "10%" }}>Stok</th>
                 <th style={{ width: "15%" }}>Harga (Rp)</th>
                 <th style={{ width: "10%" }}>Status</th>
-                <th style={{ width: "10%", textAlign: "center" }}>Aksi</th>
+                <th style={{ width: "10%", textAlign: "center" }}></th>
               </tr>
             </thead>
             <tbody>
-              {paginatedProducts.map((product, index: number) => (
-                <React.Fragment key={product.id}>
-                  <tr>
-                    <td>
-                      <ProductNameCell>
-                        <ProductImage src={`/avatar.svg`} alt={product.title} />
-                        <span>{product.title}</span>
-                      </ProductNameCell>
-                    </td>
-                    <td className="max-w-[100px]">
-                      <PClamp>{product.description || "Meja"}</PClamp>
-                    </td>
-                    <td>{product.id || 0}</td>
-                    <td>{product.price?.toLocaleString("id-ID") || "0"}</td>
-                    <td>
-                      <StatusBadge
-                        status={product.status ? "aktif" : "nonaktif"}
-                      >
-                        {product.status ? "Aktif" : "Nonaktif"}
-                      </StatusBadge>
-                    </td>
-                    <td>
-                      <ActionCell>
-                        <ActionButton
-                          onClick={() => navigate(String(product?.id))}
-                        >
-                          Lihat Detail
-                        </ActionButton>
-                        <MoreButton>...</MoreButton>
-                      </ActionCell>
-                    </td>
-                  </tr>
-                </React.Fragment>
-              ))}
+              {products && products.length > 0 ? (
+                products.map((product, index: number) => (
+                  <React.Fragment key={product.id || index}>
+                    <tr>
+                      <td>
+                        <ProductNameCell>
+                          <ProductImage 
+                            src={product.image || `/avatar.svg`} 
+                            alt={product.name || 'Product'} 
+                          />
+                          <span>{product.name || '-'}</span>
+                        </ProductNameCell>
+                      </td>
+                      <td className="max-w-[100px]">
+                        <PClamp>{product.category || '-'}</PClamp>
+                      </td>
+                      <td>{product.stok || 0} {product.satuan || ''}</td>
+                      <td>
+                        {(product.price || 0).toLocaleString("id-ID")}
+                      </td>
+                      <td>
+                        <StatusBadge status={getStatusType(product.status)}>
+                          {getStatusLabel(product.status)}
+                        </StatusBadge>
+                      </td>
+                      <td>
+                        <ActionCell>
+                          <ActionButton
+                            onClick={() => navigate(String(product?.id))}
+                          >
+                            Lihat Detail
+                          </ActionButton>
+                          <MoreButton 
+                            onClick={() => setModalDelete({ show: true, data: product })}
+                          >
+                            ...
+                          </MoreButton>
+                        </ActionCell>
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '32px' }}>
+                    <P14Regular className="text-muted">
+                      Tidak ada data produk
+                    </P14Regular>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </StyledTable>
 
@@ -327,13 +345,13 @@ function ProductsList() {
                 <option value={20}>20</option>
                 <option value={50}>50</option>
               </ItemsPerPageSelect>
-              <span>Dari {totalItems} Data</span>
+              <span>Dari {pagination.total || 0} Data</span>
             </PaginationInfo>
 
             <ReactPaginate
               previousLabel="‹"
               nextLabel="›"
-              pageCount={pageCount}
+              pageCount={pagination.pages || 1}
               onPageChange={handlePageChange}
               containerClassName="pagination"
               pageClassName="page-item"
@@ -346,7 +364,7 @@ function ProductsList() {
               breakLabel="..."
               breakClassName="page-item"
               breakLinkClassName="page-link"
-              forcePage={currentPage}
+              forcePage={currentPage - 1} // ReactPaginate uses 0-based index
               pageRangeDisplayed={3}
               marginPagesDisplayed={2}
             />
@@ -354,7 +372,7 @@ function ProductsList() {
         </Card>
       </ContainerStyled>
 
-      <Modal show={show} onHide={handleClose} size="lg">
+      <Modal show={show} onHide={handleClose} size="lg" centered>
         <Modal.Header>
           <DFlexColumn className="w-100 gap-1">
             <DFlexJustifyBetween>
@@ -380,19 +398,20 @@ function ProductsList() {
           />
         </Modal.Body>
       </Modal>
-      <Modal show={modalDelete?.show} size="sm">
+      
+      <Modal show={modalDelete?.show} size="sm" onHide={handleCloseModalDelete} centered>
         <Modal.Header>
           <Modal.Title>Delete Product</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Apakah anda yakin?</p>
+          <p>Apakah anda yakin ingin menghapus produk "{modalDelete?.data?.nama || modalDelete?.data?.name}"?</p>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => handleApplyConfirm("x")}>
-            Close
+            Batal
           </Button>
-          <Button variant="primary" onClick={() => handleApplyConfirm("y")}>
-            Delete
+          <Button variant="danger" onClick={() => handleApplyConfirm("y")}>
+            Hapus
           </Button>
         </Modal.Footer>
       </Modal>
@@ -401,260 +420,3 @@ function ProductsList() {
 }
 
 export default ProductsList;
-
-export const ContainerStyled = styled(DFlexColumn)`
-  width: 100%;
-  background: transparent !important;
-  padding: 32px 64px !important;
-  margin: 0;
-`;
-
-const SearchInputWrapper = styled.div`
-  position: relative;
-  flex: 1;
-  max-width: 300px;
-`;
-
-const SearchIcon = styled.div`
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-`;
-
-const SearchInput = styled.input`
-  width: 100%;
-  padding: 8px 12px 8px 36px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-
-  &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-`;
-
-const SortContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-  gap: 8px;
-`;
-
-const SortButton = styled.button`
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: white;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
-  }
-`;
-
-const StyledTable = styled(Table)`
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-
-  thead {
-    background: #f9fafb;
-
-    th {
-      padding: 12px 16px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #374151;
-      border-bottom: 2px solid #e5e7eb;
-      text-align: left;
-    }
-  }
-
-  tbody {
-    tr {
-      border-bottom: 1px solid #e5e7eb;
-      transition: background-color 0.2s;
-
-      &:hover {
-        background-color: #f9fafb;
-      }
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-
-    td {
-      padding: 16px;
-      font-size: 14px;
-      color: #1f2937;
-      vertical-align: middle;
-    }
-  }
-`;
-
-const ProductNameCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const ProductImage = styled.img`
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
-  object-fit: cover;
-  background: #f3f4f6;
-`;
-
-const StatusBadge = styled.span<{ status: string }>`
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-
-  ${({ status }) => {
-    if (status === "aktif") {
-      return `
-        background: #d1fae5;
-        color: #065f46;
-      `;
-    } else if (status === "menipis") {
-      return `
-        background: #fed7aa;
-        color: #92400e;
-      `;
-    } else {
-      return `
-        background: #e5e7eb;
-        color: #374151;
-      `;
-    }
-  }}
-`;
-
-const ActionCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-`;
-
-const ActionButton = styled.button`
-  padding: 6px 12px;
-  background: transparent;
-  color: #f97316;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-
-  &:hover {
-    background: #fff7ed;
-  }
-`;
-
-const MoreButton = styled.button`
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: bold;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #f3f4f6;
-  }
-`;
-
-const PaginationContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: transparent !important;
-  /* border-radius: 8px;
-  border: 1px solid #e5e7eb; */
-
-  .pagination {
-    display: flex;
-    list-style: none;
-    gap: 4px;
-    margin: 0;
-    padding: 0;
-
-    .page-item {
-      .page-link {
-        padding: 8px 12px;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        color: #374151;
-        text-decoration: none;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 14px;
-
-        &:hover {
-          background: #f9fafb;
-          border-color: #d1d5db;
-        }
-      }
-
-      &.active .page-link {
-        background: #f97316;
-        border-color: #f97316;
-        color: white;
-      }
-
-      &.disabled .page-link {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-  }
-`;
-
-const PaginationInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #6b7280;
-`;
-
-const ItemsPerPageSelect = styled.select`
-  padding: 6px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-  cursor: pointer;
-
-  &:focus {
-    border-color: #3b82f6;
-  }
-`;

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -23,20 +23,21 @@ import FormSelectControl from "../../../components/input/FormSelectControl";
 import styled from "styled-components";
 import FormUpload from "../../../components/input/FormUpload";
 import ModalSucces from "../../../components/modal/ModalSucces";
+import { omit } from "lodash";
 
 interface Props {
   callbackSubmit: (value: any) => void;
   dataSelected?: IProduct;
   onClose: () => void;
 }
+const validationSchema = Yup.object().shape({
+  name: Yup.string().required("Title name is required"),
+  category: Yup.string().required("Category is required"),
+  stok: Yup.number().min(1),
+  price: Yup.number().min(1),
+});
 
 function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
-  const validationSchema = Yup.object().shape({
-    title: Yup.string().required("Title name is required"),
-    description: Yup.string().required("Description is required"),
-    price: Yup.number().min(1),
-  });
-
   const {
     register,
     handleSubmit,
@@ -45,11 +46,13 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
     formState: { errors },
   } = useForm<IProduct>({
     resolver: yupResolver(validationSchema) as any,
-    defaultValues: { title: "", description: "", price: 10 },
+    defaultValues: { name: "", category: "", stok: 0, price: 0 },
   });
+
+  const [result, setResult] = useState<any>();
   const watchStatus = watch("status");
-  const watchUnit = watch("unit");
-  console.log({ watchStatus, watchUnit });
+  const watchUnit = watch("satuan");
+  console.log({ watchStatus, watchUnit, result });
   useEffect(() => {
     if (dataSelected) reset(dataSelected);
   }, [dataSelected]);
@@ -60,10 +63,11 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
   };
 
   const addProduct = async (product: IProduct) => {
+    const params = { ...product, image: result?.image_url };
     try {
       const request = product?.id
-        ? await updateProduct(Number(product?.id), product)
-        : await createProduct(product);
+        ? await updateProduct(Number(product?.id), params)
+        : await createProduct(params);
       callbackSubmit(request);
     } catch (error) {
       console.log(error);
@@ -75,7 +79,7 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
       <Form onSubmit={handleSubmit(handleSubmitForm)}>
         <Row>
           <Col md={4}>
-            <FormUpload />
+            <FormUpload result={result} setResult={setResult} />
           </Col>
           <Col md={8}>
             <Row className="g-4">
@@ -83,11 +87,11 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                 <FormInputControl
                   labelName="Nama Produk"
                   placeholder="Masukkan Nama Produk"
-                  // register={register("name")}
+                  register={register("name")}
                   type="text"
                   className="mb-0"
-                  // isInvalid={errors.name}
-                  // message={errors.name?.message}
+                  isInvalid={errors.name}
+                  message={errors.name?.message}
                   required
                 />
               </Col>
@@ -95,14 +99,13 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                 <FormSelectControl
                   labelName="Kategori Produk"
                   placeholder="Pilih Kategori"
-                  // register={register("category")}
-                  // isInvalid={errors.category}
-                  // message={errors.category?.message}
+                  register={register("category")}
                   required
                   options={[
                     { label: "Elektronik", value: "elektronik" },
                     { label: "Fashion", value: "fashion" },
                     { label: "Makanan", value: "makanan" },
+                    { label: "Furniture", value: "Furniture" },
                   ]}
                 />
               </Col>
@@ -110,25 +113,26 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                 <FormInputControl
                   labelName="Deskripsi"
                   placeholder="Masukkan Deskripsi Produk"
-                  // register={register("name")}
+                  register={register("description")}
                   type="text"
                   as={"textarea"}
                   className="mb-0"
-                  // isInvalid={errors.name}
-                  // message={errors.name?.message}
+                  isInvalid={errors.description}
+                  message={errors.description?.message}
                 />
               </Col>
               <Col md={6}>
                 <FormInputControl
                   labelName="Harga Satuan"
-                  // register={register("name")}
+                  register={register("price")}
+                  required
                   prefix="Rp"
                   type="number"
                   className="mb-0"
                   prefixClassName="fw-semibold"
                   defaultValue={0}
-                  // isInvalid={errors.name}
-                  // message={errors.name?.message}
+                  isInvalid={errors.price}
+                  message={errors.price?.message}
                 />
               </Col>
               <Col md={6}>
@@ -136,24 +140,26 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                   <Col md={7}>
                     <FormInputControl
                       labelName="Stok Awal"
-                      // register={register("name")}
+                      required
+                      register={register("stok")}
+                      isInvalid={errors.stok}
+                      message={errors.stok?.message}
                       type="number"
                       className="mb-0"
                       defaultValue={0}
-                      // isInvalid={errors.name}
-                      // message={errors.name?.message}
                     />
                   </Col>
                   <Col md={5}>
                     <FormSelectControl
-                      register={register("unit")}
+                      register={register("satuan")}
                       version="simple"
                       style={{ marginTop: "32px" }}
                       defaultValue={{ label: "unit", value: "unit" }}
                       options={[
                         { label: "Unit", value: "unit" },
-                        { label: "Pcs", value: "pcs" },
                         { label: "Box", value: "box" },
+                        { label: "Item", value: "item" },
+                        { label: "Pcs", value: "pcs" },
                       ]}
                     />
                   </Col>
@@ -182,7 +188,6 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                           type="switch"
                           id="custom-switch"
                           {...register("status")}
-                          // defaultChecked={dataSelected?.status === "active" ? true : false}
                           className="ms-2"
                         />
                       </DFlexJustifyEnd>
@@ -194,13 +199,13 @@ function ProductsForm({ callbackSubmit, dataSelected, onClose }: Props) {
                 <Col md={12}>
                   <FormInputControl
                     labelName="Produk Menipis"
-                    // register={register("name")}
+                    register={register("stokMenipis")}
+                    isInvalid={errors.stokMenipis}
+                    message={errors.stokMenipis?.message}
                     type="number"
                     className="mb-0"
                     defaultValue={0}
                     suffixClassName="text-capitalize"
-                    // isInvalid={errors.name}
-                    // message={errors.name?.message}
                     suffix={watchUnit}
                   />
                 </Col>

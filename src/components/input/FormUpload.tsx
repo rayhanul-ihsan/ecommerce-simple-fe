@@ -2,8 +2,16 @@ import React, { useRef, useState } from "react";
 import { Card } from "react-bootstrap";
 import styled from "styled-components";
 import LazyImage from "../LazyLoad/LazyImage";
+import axios from "axios";
+import { API_BASE_URL, getAuthHeader } from "../../features/products/productsAPI";
 
-export default function FormUpload() {
+
+interface Proops {
+  result?: any
+  setResult?: any
+}
+
+export default function FormUpload({ result, setResult }: Proops) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
@@ -27,24 +35,34 @@ export default function FormUpload() {
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("file", file);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/upload-image`, 
+        formData,
+        getAuthHeader()
+      );
 
-      if (!response.ok) {
-        throw new Error("Upload failed");
+      console.log("Upload success:", response.data);
+      
+      // Set result dari API response
+      if (setResult) {
+        setResult(response.data);
       }
 
-      const data = await response.json();
-      console.log("Upload success:", data);
-      // Jika API mengembalikan URL gambar, gunakan itu
-      // setImageUrl(data.imageUrl);
+      // Jika API mengembalikan URL gambar, update preview dengan URL dari server
+      if (response.data?.image_url) {
+        setImageUrl(response.data.image_url);
+      }
     } catch (error) {
       console.error("Upload error:", error);
       // Handle error (tampilkan notifikasi, dll)
+      if (setResult) {
+        setResult({
+          status: "error",
+          message: error instanceof Error ? error.message : "Upload failed"
+        });
+      }
     } finally {
       setIsUploading(false);
     }
@@ -54,6 +72,10 @@ export default function FormUpload() {
     setImageUrl("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+    // Reset result saat gambar dihapus
+    if (setResult) {
+      setResult(null);
     }
   };
 
@@ -67,9 +89,14 @@ export default function FormUpload() {
         // Tampilan setelah gambar di-upload
         <>
           <ImagePreviewCard>
+            {isUploading && (
+              <UploadingOverlay>
+                <span>Uploading...</span>
+              </UploadingOverlay>
+            )}
             <ImagePreview src={imageUrl} alt="Preview" />
           </ImagePreviewCard>
-          <ButtonCustom type="button" onClick={handleClickUpload}>
+          <ButtonCustom type="button" onClick={handleClickUpload} disabled={isUploading}>
             <LazyImage
               src="/UploadSimple.svg"
               width={16}
@@ -78,7 +105,7 @@ export default function FormUpload() {
             />
             Ganti Gambar
           </ButtonCustom>
-          <DeleteButton type="button" onClick={handleDelete}>
+          <DeleteButton type="button" onClick={handleDelete} disabled={isUploading}>
             Hapus
           </DeleteButton>
         </>
@@ -90,14 +117,14 @@ export default function FormUpload() {
               <LazyImage src="/IconUpload.svg" width={50} />
             </CardBody>
           </CardCustom>
-          <ButtonCustom type="button" onClick={handleClickUpload}>
+          <ButtonCustom type="button" onClick={handleClickUpload} disabled={isUploading}>
             <LazyImage
               src="/UploadSimple.svg"
               width={16}
               className="me-2"
               style={{ filter: "invert(0.5)" }}
             />
-            Unggah Gambar
+            {isUploading ? "Uploading..." : "Unggah Gambar"}
           </ButtonCustom>
         </>
       )}
@@ -129,6 +156,11 @@ const ButtonCustom = styled.button`
   &:hover {
     background: #f7f8fa !important;
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 const DeleteButton = styled.button`
@@ -144,6 +176,11 @@ const DeleteButton = styled.button`
   &:hover {
     color: #bb2d3b;
     text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -176,6 +213,7 @@ const ImagePreviewCard = styled.div`
   overflow: hidden;
   margin-bottom: 1rem;
   background-color: #f7f8fa;
+  position: relative;
 `;
 
 const ImagePreview = styled.img`
@@ -184,4 +222,23 @@ const ImagePreview = styled.img`
   display: block;
   object-fit: cover;
   max-height: 300px;
+`;
+
+const UploadingOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  
+  span {
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+  }
 `;

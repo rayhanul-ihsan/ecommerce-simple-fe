@@ -1,15 +1,22 @@
 export interface IProduct {
   id?: number;   // id optional saat create
-  title: string;
-  description: string
+  image?: string;
+  name: string;
+  category: string
   price: number;
+  stok: number;
+  stokMenipis?: number;
+  description?: string;
   status?: boolean
-  unit?: string
+  satuan?: string
 }
 
 export interface IParamsGetProduct {
-  skip: number
-  limit: number
-  sortBy?: string
-  order?: string
+  search?: string;
+  search_by?: string[];
+  operator?: string;
+  orderBy?: string;
+  order?: string;
+  page?: number;
+  size?: number
 }

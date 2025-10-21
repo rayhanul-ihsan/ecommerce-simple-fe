@@ -3,8 +3,17 @@ import { Dropdown } from "react-bootstrap";
 import styled from "styled-components";
 import LazyImage from "../LazyLoad/LazyImage";
 import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../store/reducers/auth";
 
 export default function DropdownAvatar() {
+  const dispatch = useDispatch();
+  const { loginUser } = useSelector((state: any) => state.auth);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    window.location.href = "/signin";
+  };
   return (
     <Dropdown align="end">
       <StyledToggle variant="light" id="dropdown-avatar">
@@ -18,11 +27,11 @@ export default function DropdownAvatar() {
               strokeLinejoin="round"
             />
           </Arrow>
-          <AdminName>Admin1</AdminName>
+          <AdminName>{loginUser?.data?.username}</AdminName>
           <LazyImage
-            src="/avatar.svg"
-            width={36}
-            height={36}
+            src={loginUser?.data?.image}
+            width={30}
+            height={30}
             alt="Avatar"
             style={{ borderRadius: "50%", objectFit: "cover" }}
           />
@@ -30,9 +39,14 @@ export default function DropdownAvatar() {
       </StyledToggle>
 
       <StyledMenu>
-        <StyledItem href="/user-management">Management User</StyledItem>
+        <StyledItem href="/products/list">
+          Daftar Product
+        </StyledItem>
+        <StyledItem href="/administration/user-management">
+          Management User
+        </StyledItem>
         <Dropdown.Divider />
-        <StyledItem href="/signin" className="logout">
+        <StyledItem onClick={handleLogout} className="logout">
           Logout
         </StyledItem>
       </StyledMenu>
@@ -40,12 +54,12 @@ export default function DropdownAvatar() {
   );
 }
 
-const StyledToggle = styled(Dropdown.Toggle)`
+export const StyledToggle = styled(Dropdown.Toggle)`
   border: none !important;
+  border-color: none !important;
   background: transparent !important;
   box-shadow: none !important;
   padding: 8px 12px;
-
   &::after {
     display: none !important;
   }
