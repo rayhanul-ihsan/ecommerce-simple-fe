@@ -45,11 +45,11 @@ export const getProductById = async (id: string): Promise<IProduct> => {
 
 // --- UPDATE ---
 export const updateProduct = async (
-  id: number,
+  id: string,
   product: IProduct
 ): Promise<IProduct> => {
   const response: AxiosResponse<IProduct> = await axios.put(
-    `${API_BASE_URL}/products/${id}`,
+    `${API_BASE_URL}/products/update/${id}`,
     product,
     getAuthHeader()
   );

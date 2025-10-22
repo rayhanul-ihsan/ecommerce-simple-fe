@@ -44,7 +44,7 @@ export const getUserById = async (id: string): Promise<IUser> => {
 
 // --- UPDATE ---
 export const updateUser = async (
-  id: number,
+  id: string,
   params: IUser
 ): Promise<IUser> => {
   const response: AxiosResponse<IUser> = await axios.put(

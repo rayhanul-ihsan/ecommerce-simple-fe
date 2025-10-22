@@ -26,13 +26,13 @@ export default function DropdownActionData({
   };
 
   return (
-    <Dropdown className="hide-toogle hide-focus" style={{ zIndex: "999" }}>
+    <Dropdown className="hide-toogle hide-focus" >
       <StyledToggle variant="light" id={`dropdown-act-${nanoid()}`}>
         <RotateComponent value={verticalToggler ? "90" : "0"}>
           <DotDotIcon />
         </RotateComponent>
       </StyledToggle>
-      <Dropdown.Menu>
+      <Dropdown.Menu style={{ zIndex: "999" }}>
         {handleDetail && (
           <Dropdown.Item onClick={() => handleDetail(item)}>
             {actionTitle?.detail || defaultActionTitle?.detail}

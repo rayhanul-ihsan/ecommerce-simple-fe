@@ -30,8 +30,8 @@ export default function DropdownAvatar() {
           <AdminName>{loginUser?.data?.username}</AdminName>
           <LazyImage
             src={loginUser?.data?.image}
-            width={30}
-            height={30}
+            width={35}
+            height={35}
             alt="Avatar"
             style={{ borderRadius: "50%", objectFit: "cover" }}
           />

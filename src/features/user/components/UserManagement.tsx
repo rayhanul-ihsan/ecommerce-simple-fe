@@ -48,6 +48,7 @@ import {
 import FormSelectControl from "../../../components/input/FormSelectControl";
 import FiSearchIcon from "../../../assets/icons/FiSearchIcon";
 import DropdownActionData from "../../../components/dropdown/DropdownActionData";
+import ModalConfirm from "../../../components/modal/ModalConfirm";
 
 function UserManagement() {
   const navigate = useNavigate();
@@ -169,6 +170,7 @@ function UserManagement() {
 
   const handleEdit = (item: IUser) => {
     setDataSelected(item);
+    handleShow();
     console.log({ item });
   };
 
@@ -231,7 +233,7 @@ function UserManagement() {
           </DFlex>
         </div>
 
-        <Card className="mb-5">
+        <Card className="mb-5 position-relative">
           <Row className="p-4">
             <Col md={6}>
               <DFlexJustifyStart className="gap-3">
@@ -403,39 +405,13 @@ function UserManagement() {
       </Modal>
 
       {/* Modal Delete Confirmation */}
-      <Modal
-        show={modalDelete.show}
-        onHide={handleCloseModalDelete}
-        size="sm"
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Hapus User</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>
-            Apakah Anda yakin ingin menghapus user{" "}
-            <strong>{modalDelete.data?.username}</strong>?
-          </p>
-          <p className="text-muted small">
-            Tindakan ini tidak dapat dibatalkan.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => handleApplyConfirm("cancel")}
-          >
-            Batal
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => handleApplyConfirm("confirm")}
-          >
-            Hapus
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <ModalConfirm
+        modalProps={modalDelete}
+        onClose={handleCloseModalDelete}
+        handleApplyConfirm={handleApplyConfirm}
+        title="User"
+        body={modalDelete.data?.username}
+      />
     </>
   );
 }

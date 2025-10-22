@@ -8,6 +8,7 @@ export interface IUser {
     role: string;
     status?: boolean;
     created_at?: string;
+    new_password?: string
 }
 export interface IParamsGetUser {
   search?: string;

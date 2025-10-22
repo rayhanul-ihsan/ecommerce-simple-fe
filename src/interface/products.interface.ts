@@ -1,5 +1,5 @@
 export interface IProduct {
-  id?: number;   // id optional saat create
+  _id?: number;   // id optional saat create
   image?: string;
   name: string;
   category: string

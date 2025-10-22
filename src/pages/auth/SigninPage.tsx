@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { login } from "../../store/reducers/auth";
+import FormInputPassword from "../../components/input/FormInputPassword";
 
 const schema = yup.object().shape({
   username: yup.string().required("Username is required"),
@@ -81,13 +82,13 @@ export default function SigninPage() {
                   />
                 </Col>
                 <Col md={12}>
-                  <FormInputControl
+                  <FormInputPassword
                     labelName="Password"
-                    placeholder="Input Password"
                     register={register("password")}
-                    type="password"
-                    isInvalid={errors.password}
-                    message={errors.password?.message}
+                    isInvalid={errors?.password as boolean | undefined}
+                    message={errors?.password?.message}
+                    placeholder="Input Password"
+                    required={true}
                   />
                 </Col>
                 <Col md={12}>

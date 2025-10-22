@@ -28,13 +28,32 @@ import ReactPaginate from "react-paginate";
 import FiSearchIcon from "../../../assets/icons/FiSearchIcon";
 import { useSelector } from "react-redux";
 import { nanoid } from "nanoid";
-import { ActionButton, ActionCell, ContainerStyled, ItemsPerPageSelect, MoreButton, PaginationContainer, PaginationInfo, ProductImage, ProductNameCell, SearchIcon, SearchInput, SearchInputWrapper, SortButton, SortContainer, StatusBadge, StyledTable } from "../../../styled/productList.styled";
+import {
+  ActionButton,
+  ActionCell,
+  ContainerStyled,
+  ItemsPerPageSelect,
+  MoreButton,
+  PaginationContainer,
+  PaginationInfo,
+  ProductImage,
+  ProductNameCell,
+  SearchIcon,
+  SearchInput,
+  SearchInputWrapper,
+  SortButton,
+  SortContainer,
+  StatusBadge,
+  StyledTable,
+} from "../../../styled/productList.styled";
+import DropdownActionData from "../../../components/dropdown/DropdownActionData";
+import ModalConfirm from "../../../components/modal/ModalConfirm";
 
 function ProductsList() {
   const navigate = useNavigate();
   const { loginUser } = useSelector((state: any) => state.auth);
-  console.log('loginuser redux', loginUser);
-  
+  console.log("loginuser redux", loginUser);
+
   const [products, setProducts] = useState<IProduct[]>([]);
   const [show, setShow] = useState(false);
   const [dataSelected, setDataSelected] = useState<IProduct>();
@@ -52,7 +71,7 @@ function ProductsList() {
     page: 1,
     size: 10,
     total: 0,
-    pages: 1
+    pages: 1,
   });
 
   const [modalDelete, setModalDelete] = useState<any>({
@@ -65,32 +84,41 @@ function ProductsList() {
 
   useEffect(() => {
     getProductData();
-  }, [refreshKey, currentPage, itemsPerPage, searchTerm, categoryFilter, statusFilter, sortBy, sortOrder]);
+  }, [
+    refreshKey,
+    currentPage,
+    itemsPerPage,
+    searchTerm,
+    categoryFilter,
+    statusFilter,
+    sortBy,
+    sortOrder,
+  ]);
 
   const getProductData = async () => {
     try {
       // Build search_by array based on active filters
       const searchBy: string[] = [];
-      if (searchTerm) searchBy.push('nama');
-      if (categoryFilter) searchBy.push('kategori');
-      if (statusFilter) searchBy.push('status');
+      if (searchTerm) searchBy.push("nama");
+      if (categoryFilter) searchBy.push("kategori");
+      if (statusFilter) searchBy.push("status");
 
       const params: IParamsGetProduct = {
-        search: searchTerm || categoryFilter || statusFilter || '',
+        search: searchTerm || categoryFilter || statusFilter || "",
         search_by: searchBy.length > 0 ? searchBy : [],
-        operator: 'and',
+        operator: "and",
         orderBy: sortBy,
         order: sortOrder,
         page: currentPage,
-        size: itemsPerPage
+        size: itemsPerPage,
       };
 
       const request: any = await getProducts({ params: params });
-      
+
       // Handle response structure { data: [...], pagination: {...} }
       if (request && request.data) {
         setProducts(request.data);
-        
+
         // Update pagination info from server
         if (request.pagination) {
           setPagination(request.pagination);
@@ -137,7 +165,7 @@ function ProductsList() {
   ];
 
   const callbackSubmit = (values: IProduct) => {
-    setRefreshKey(nanoid()); 
+    setRefreshKey(nanoid());
     handleClose();
   };
 
@@ -164,9 +192,14 @@ function ProductsList() {
     }
   };
 
+  const handleEdit = (item: IProduct) => {
+    setDataSelected(item);
+    handleShow();
+    console.log({ item });
+  };
   // Helper function to get status label
   const getStatusLabel = (status: any) => {
-    if (typeof status === 'string') {
+    if (typeof status === "string") {
       return status.charAt(0).toUpperCase() + status.slice(1);
     }
     return status ? "Aktif" : "Nonaktif";
@@ -174,7 +207,7 @@ function ProductsList() {
 
   // Helper function to get status type for badge
   const getStatusType = (status: any): string => {
-    if (typeof status === 'string') {
+    if (typeof status === "string") {
       return status.toLowerCase();
     }
     return status ? "aktif" : "nonaktif";
@@ -281,42 +314,50 @@ function ProductsList() {
             </thead>
             <tbody>
               {products && products.length > 0 ? (
-                products.map((product, index: number) => (
-                  <React.Fragment key={product.id || index}>
+                products.map((item, index: number) => (
+                  <React.Fragment key={item._id || index}>
                     <tr>
                       <td>
                         <ProductNameCell>
-                          <ProductImage 
-                            src={product.image || `/avatar.svg`} 
-                            alt={product.name || 'Product'} 
+                          <ProductImage
+                            src={item.image || `/avatar.svg`}
+                            alt={item.name || "Product"}
                           />
-                          <span>{product.name || '-'}</span>
+                          <span>{item.name || "-"}</span>
                         </ProductNameCell>
                       </td>
                       <td className="max-w-[100px]">
-                        <PClamp>{product.category || '-'}</PClamp>
-                      </td>
-                      <td>{product.stok || 0} {product.satuan || ''}</td>
-                      <td>
-                        {(product.price || 0).toLocaleString("id-ID")}
+                        <PClamp>{item.category || "-"}</PClamp>
                       </td>
                       <td>
-                        <StatusBadge status={getStatusType(product.status)}>
-                          {getStatusLabel(product.status)}
+                        {item.stok || 0} {item.satuan || ""}
+                      </td>
+                      <td>{(item.price || 0).toLocaleString("id-ID")}</td>
+                      <td>
+                        <StatusBadge status={getStatusType(item.status)}>
+                          {item.status ? (
+                            <img src="/check.svg" alt="check" />
+                          ) : (
+                            <img src="/check-abu.svg" alt="check" />
+                          )}
+
+                          {getStatusLabel(item.status)}
                         </StatusBadge>
                       </td>
                       <td>
                         <ActionCell>
                           <ActionButton
-                            onClick={() => navigate(String(product?.id))}
+                            onClick={() => navigate(String(item?._id))}
                           >
                             Lihat Detail
                           </ActionButton>
-                          <MoreButton 
-                            onClick={() => setModalDelete({ show: true, data: product })}
-                          >
-                            ...
-                          </MoreButton>
+
+                          <DropdownActionData
+                            handleEdit={() => handleEdit(item)}
+                            handleDelete={() =>
+                              setModalDelete({ show: true, data: item })
+                            }
+                          />
                         </ActionCell>
                       </td>
                     </tr>
@@ -324,7 +365,10 @@ function ProductsList() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '32px' }}>
+                  <td
+                    colSpan={6}
+                    style={{ textAlign: "center", padding: "32px" }}
+                  >
                     <P14Regular className="text-muted">
                       Tidak ada data produk
                     </P14Regular>
@@ -398,23 +442,14 @@ function ProductsList() {
           />
         </Modal.Body>
       </Modal>
-      
-      <Modal show={modalDelete?.show} size="sm" onHide={handleCloseModalDelete} centered>
-        <Modal.Header>
-          <Modal.Title>Delete Product</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Apakah anda yakin ingin menghapus produk "{modalDelete?.data?.nama || modalDelete?.data?.name}"?</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => handleApplyConfirm("x")}>
-            Batal
-          </Button>
-          <Button variant="danger" onClick={() => handleApplyConfirm("y")}>
-            Hapus
-          </Button>
-        </Modal.Footer>
-      </Modal>
+
+      <ModalConfirm
+        modalProps={modalDelete}
+        onClose={handleCloseModalDelete}
+        handleApplyConfirm={handleApplyConfirm}
+        title="Product"
+        body={modalDelete?.data?.name}
+      />
     </>
   );
 }

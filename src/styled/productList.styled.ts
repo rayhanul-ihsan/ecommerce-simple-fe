@@ -125,8 +125,10 @@ export const ProductImage = styled.img`
 
 export const StatusBadge = styled.span<{ status: string }>`
   display: inline-flex;
+  gap: 4px;
   align-items: center;
-  padding: 4px 12px;
+  border: 1px solid #065f46;
+  padding: 4px 8px;
   border-radius: 16px;
   font-size: 12px;
   font-weight: 500;

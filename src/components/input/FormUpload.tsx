@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card } from "react-bootstrap";
 import styled from "styled-components";
 import LazyImage from "../LazyLoad/LazyImage";
@@ -9,12 +9,17 @@ import { API_BASE_URL, getAuthHeader } from "../../features/products/productsAPI
 interface Proops {
   result?: any
   setResult?: any
+  defaultImage?: string
 }
 
-export default function FormUpload({ result, setResult }: Proops) {
+export default function FormUpload({ result, setResult, defaultImage }: Proops) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (defaultImage) setImageUrl(defaultImage);
+  }, [defaultImage]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -206,7 +211,7 @@ const CardBody = styled(Card.Body)`
   justify-content: center;
 `;
 
-const ImagePreviewCard = styled.div`
+export const ImagePreviewCard = styled.div`
   width: 100%;
   border: 1.5px solid #c5c8cc;
   border-radius: 0.5rem;
@@ -216,7 +221,7 @@ const ImagePreviewCard = styled.div`
   position: relative;
 `;
 
-const ImagePreview = styled.img`
+export const ImagePreview = styled.img`
   width: 100%;
   height: auto;
   display: block;

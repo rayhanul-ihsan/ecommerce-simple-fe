@@ -12,6 +12,10 @@ import { IUser } from "../../../interface/user.interface";
 import { createUser, updateUser } from "../UserAPI";
 import { omit } from "lodash";
 import FormSelectControl from "../../../components/input/FormSelectControl";
+import EyeIcon from "../../../assets/icons/EyeIcon";
+import EyeOffIcon from "../../../assets/icons/EyeOffIcon";
+import EditIconPen from "../../../assets/icons/EditIconPen";
+import FormInputPassword from "../../../components/input/FormInputPassword";
 
 interface Props {
   callbackSubmit: (value: any) => void;
@@ -24,12 +28,12 @@ const validationSchema = Yup.object().shape({
   email: Yup.string()
     .email("Format email tidak valid")
     .required("Email wajib diisi"),
-  password: Yup.string()
-    .min(6, "Password minimal 6 karakter")
-    .required("Password wajib diisi"),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password")], "Konfirmasi password tidak cocok")
-    .required("Konfirmasi password wajib diisi"),
+  // password: Yup.string()
+  //   .min(6, "Password minimal 6 karakter")
+  //   .required("Password wajib diisi"),
+  // confirmPassword: Yup.string()
+  //   .oneOf([Yup.ref("password")], "Konfirmasi password tidak cocok")
+  //   .required("Konfirmasi password wajib diisi"),
   role: Yup.string().required("Role wajib diisi"),
 });
 
@@ -52,6 +56,8 @@ function UserForm({ callbackSubmit, dataSelected, onClose }: Props) {
   });
 
   const [result, setResult] = useState<any>();
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [changePassword, setChangePassword] = useState<boolean>(false);
 
   const watchStatus = watch("status");
 
@@ -68,8 +74,8 @@ function UserForm({ callbackSubmit, dataSelected, onClose }: Props) {
     const params = { ...user, image: result?.image_url };
     const finalParams = omit(params, ["confirmPassword"]);
     try {
-      const request = finalParams?._id
-        ? await updateUser(Number(finalParams?._id), finalParams as IUser)
+      const request = dataSelected?._id
+        ? await updateUser(String(dataSelected?._id), finalParams as IUser)
         : await createUser(finalParams as IUser);
       callbackSubmit(request);
     } catch (error) {
@@ -82,10 +88,14 @@ function UserForm({ callbackSubmit, dataSelected, onClose }: Props) {
       <Form onSubmit={handleSubmit(handleSubmitForm)}>
         <Row>
           <Col md={4}>
-            <FormUpload result={result} setResult={setResult} />
+            <FormUpload
+              result={result}
+              setResult={setResult}
+              defaultImage={dataSelected?.image || ""}
+            />
           </Col>
           <Col md={8}>
-            <Row className="g-4">
+            <Row className="g-3 mb-3">
               <Col md={6}>
                 <FormInputControl
                   labelName="Nama User"
@@ -130,27 +140,119 @@ function UserForm({ callbackSubmit, dataSelected, onClose }: Props) {
                   ]}
                 />
               </Col>
-              <Col md={6}>
-                <FormInputControl
-                  labelName="Password"
-                  placeholder="Masukkan Password"
-                  register={register("password")}
-                  isInvalid={!!errors.password}
-                  message={errors.password?.message}
-                  type="password"
-                  required
-                />
-              </Col>
-              <Col md={6}>
-                <FormInputControl
-                  labelName="Konfirmasi Password"
-                  placeholder="Masukkan Ulang Password"
-                  register={register("confirmPassword")}
-                  isInvalid={!!errors.confirmPassword}
-                  message={errors.confirmPassword?.message}
-                  type="password"
-                  required
-                />
+            </Row>
+            <Row className="g-3">
+              <Col md={12}>
+                {dataSelected ? (
+                  <Row>
+                    <Col md={12}>
+                      {changePassword ? (
+                        <Row>
+                          <Col md={12}>
+                            <FormInputPassword
+                              labelName="Password Lama"
+                              register={register("password")}
+                              isInvalid={
+                                errors?.password as boolean | undefined
+                              }
+                              message={errors?.password?.message}
+                              placeholder="Masukkan Password"
+                              required={true}
+                            />
+                          </Col>
+                          <Col md={6}>
+                            <FormInputPassword
+                              labelName="Password Baru"
+                              register={register("new_password")}
+                              isInvalid={
+                                errors?.new_password as boolean | undefined
+                              }
+                              message={errors?.new_password?.message}
+                              placeholder="Masukkan Password"
+                              required={true}
+                            />
+                          </Col>
+                          <Col md={6}>
+                            <FormInputPassword
+                              labelName="Konfirmasi Password Baru"
+                              register={register("confirmPassword")}
+                              isInvalid={
+                                errors?.confirmPassword as boolean | undefined
+                              }
+                              message={errors?.confirmPassword?.message}
+                              placeholder="Masukkan Password"
+                              required={true}
+                            />
+                          </Col>
+                          <Col md={12}>
+                            <DFlexJustifyEnd>
+                              <Button
+                                variant="outline-secondary"
+                                onClick={() => setChangePassword(false)}
+                              >
+                                cancel
+                              </Button>
+                            </DFlexJustifyEnd>
+                          </Col>
+                        </Row>
+                      ) : (
+                        <Row>
+                          <Col md={6}>
+                            <FormInputControl
+                              labelName="Password"
+                              className="fw-light"
+                              style={{
+                                backgroundColor: "#F2F2F3",
+                                borderColor: "#DDDDDE",
+                              }}
+                              defaultValue={`••••••••`}
+                              type="password"
+                              readOnly
+                            />
+                          </Col>
+                          <Col md={6}>
+                            <DFlexJustifyEnd
+                              style={{ cursor: "pointer", marginTop: "2rem" }}
+                            >
+                              <EditIconPen fill={"var(--primary)"} />
+                              <p
+                                onClick={() => setChangePassword(true)}
+                                className="text-primary mb-0"
+                              >
+                                Change Password
+                              </p>
+                            </DFlexJustifyEnd>
+                          </Col>
+                        </Row>
+                      )}
+                    </Col>
+                  </Row>
+                ) : (
+                  <Row>
+                    <Col md={6}>
+                      <FormInputPassword
+                        labelName="Password"
+                        register={register("password")}
+                        isInvalid={errors?.password as boolean | undefined}
+                        message={errors?.password?.message}
+                        placeholder="Masukkan Password"
+                        required={true}
+                      />
+                    </Col>
+                    <Col md={6}>
+                      <FormInputPassword
+                        labelName="Konfirmasi Password"
+                        register={register("confirmPassword")}
+                        isInvalid={
+                          errors?.confirmPassword as boolean | undefined
+                        }
+                        message={errors?.confirmPassword?.message}
+                        placeholder="Masukkan Password"
+                        required={true}
+                      />
+                    </Col>
+                  </Row>
+                )}
               </Col>
 
               <Col md={12}>
@@ -208,4 +310,19 @@ const SwitchStyled = styled(Form.Check)`
     width: 3rem !important;
     height: 1.5rem !important;
   }
+`;
+
+export const InputIcon = styled.span`
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--black-500);
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 10px;
 `;
