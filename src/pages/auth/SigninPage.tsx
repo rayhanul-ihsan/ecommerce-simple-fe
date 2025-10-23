@@ -1,17 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import { DFlexColumn, DFlexJustifyCenter } from "../../styled/flex.styled";
-import { Button, Card, Col, Form, Row } from "react-bootstrap";
+import {
+  Button,
+  Card,
+  Col,
+  Form,
+  Row,
+  Toast,
+  ToastContainer,
+} from "react-bootstrap";
 import LazyImage from "../../components/LazyLoad/LazyImage";
-import { P12Regular, P14Regular } from "../../styled/text.styled";
+import { P14Regular } from "../../styled/text.styled";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import FormInputControl from "../../components/input/FormInputControl";
-import { Link } from "react-router-dom";
-import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { login } from "../../store/reducers/auth";
 import FormInputPassword from "../../components/input/FormInputPassword";
+import axios from "axios";
 
 const schema = yup.object().shape({
   username: yup.string().required("Username is required"),
@@ -19,8 +26,6 @@ const schema = yup.object().shape({
 });
 
 export default function SigninPage() {
-  const { loginUser } = useSelector((state: any) => state.auth);
-  console.log({ loginUser });
   const dispatch = useDispatch();
   const {
     register,
@@ -34,26 +39,54 @@ export default function SigninPage() {
       password: "",
     },
   });
+
   const username = watch("username");
   const password = watch("password");
+
+  // 🔹 State untuk Toast
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVariant, setToastVariant] = useState<"success" | "danger">(
+    "danger"
+  );
+
   const LoginSubmit = async () => {
     try {
       const response = await axios.post(
         "http://localhost:8000/api/v1/users/login",
         {
-          username: username,
-          password: password,
+          username,
+          password,
         }
       );
+
       console.log("data login", response.data);
       dispatch(login(response.data));
-      if (response?.data?.data?.role === "admin") {
-        window.location.href = "/products/list";
+
+      if (response.data?.status === true) {
+        // setToastVariant("success");
+        // setToastMessage(response.data?.message || "Login berhasil!");
+        // setShowToast(true);
+        // setTimeout(() => {
+        // }, 1500);
+
+        if (response?.data?.data?.role === "admin") {
+          window.location.href = "/products";
+        } else {
+          window.location.href = "/products/list";
+        }
       } else {
-        window.location.href = "/users";
+        setToastVariant("danger");
+        setToastMessage(response.data?.message || "Login gagal!");
+        setShowToast(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
+      setToastVariant("danger");
+      setToastMessage(
+        error.response?.data?.message || "Terjadi kesalahan pada server."
+      );
+      setShowToast(true);
     }
   };
 
@@ -68,6 +101,7 @@ export default function SigninPage() {
                 Enter your username and password correctly
               </P14Regular>
             </DFlexColumn>
+
             <Form onSubmit={handleSubmit(LoginSubmit)}>
               <Row className="g-4">
                 <Col md={12}>
@@ -101,6 +135,29 @@ export default function SigninPage() {
           </Card.Body>
         </Card>
       </DFlexJustifyCenter>
+
+      {/* 🔹 Toast Bootstrap */}
+      <ToastContainer position="top-end" className="p-3">
+        <Toast
+          bg={toastVariant}
+          onClose={() => setShowToast(false)}
+          show={showToast}
+          delay={3000}
+          autohide
+        >
+          <Toast.Header style={{ backgroundColor: "#c3c7ca" }}>
+            <strong className="me-auto">
+              {toastVariant === "success" ? "Success" : "Error"}
+            </strong>
+          </Toast.Header>
+          <Toast.Body
+            className="text-white text-center fw-bold d-flex align-items-center justify-content-center text-italic"
+            style={{ height: "4rem" }}
+          >
+            {toastMessage}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
     </>
   );
 }

@@ -21,7 +21,7 @@ export default function Header() {
 }
 const HeaderWrapper = styled.header`
   width: 100%;
-  background: #fff;
+  background: transparent !important;
   border-bottom: 1px solid #f1f1f1;
   padding: 0 64px;
   min-height: 64px;
