@@ -39,7 +39,7 @@ export default function DropdownAvatar() {
       </StyledToggle>
 
       <StyledMenu>
-        <StyledItem href="/products/list">
+        <StyledItem href="/products">
           Daftar Product
         </StyledItem>
         <StyledItem href="/administration/user-management">

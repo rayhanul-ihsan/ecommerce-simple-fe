@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import ProductList from "../../features/products/component/ProductList";
 import AppLayout from "../../modules/AppLayout/AppLayout";
 import ProductsUserList from "../../features/products/component/ProductsUserList";
+import DetailProduct from "../../features/products/component/DetailProduct";
 
 export default function ProductsRouting() {
   return (
@@ -23,6 +24,16 @@ export default function ProductsRouting() {
           element={
             <React.Suspense>
               <ProductsUserList />
+            </React.Suspense>
+          }
+        ></Route>
+        <Route
+          path="detail/:id"
+          element={
+            <React.Suspense>
+              <AppLayout>
+                <DetailProduct />
+              </AppLayout>
             </React.Suspense>
           }
         ></Route>
