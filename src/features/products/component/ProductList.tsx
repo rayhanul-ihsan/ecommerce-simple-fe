@@ -50,9 +50,8 @@ import DropdownActionData from "../../../components/dropdown/DropdownActionData"
 import ModalConfirm from "../../../components/modal/ModalConfirm";
 
 function ProductsList() {
-  const navigate = useNavigate();
-  const { loginUser } = useSelector((state: any) => state.auth);
-  console.log("loginuser redux", loginUser);
+  const [isDetail, setIsDetail] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
 
   const [products, setProducts] = useState<IProduct[]>([]);
   const [show, setShow] = useState(false);
@@ -61,8 +60,8 @@ function ProductsList() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [sortBy, setSortBy] = useState("nama");
+  const [statusFilter, setStatusFilter] = useState<any>();
+  const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,90 +78,163 @@ function ProductsList() {
     data: null,
   });
 
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
+  const handleClose = () => {
+    setShow(false);
+    setDataSelected(undefined);
+    setIsEdit(false);
+    setIsDetail(false);
+  };
+  const handleShow = () => {
+    setDataSelected(undefined);
+    setIsEdit(false);
+    setIsDetail(false);
+    setShow(true);
+  };
 
   useEffect(() => {
     getProductData();
   }, [
-    refreshKey,
-    currentPage,
-    itemsPerPage,
     searchTerm,
     categoryFilter,
     statusFilter,
     sortBy,
     sortOrder,
+    currentPage,
+    itemsPerPage,
+    refreshKey,
   ]);
+
+  const buildQueryParams = (): IParamsGetProduct => {
+    const searchBy: string[] = [];
+    const searchValues: string[] = [];
+
+    if (searchTerm.trim()) {
+      searchBy.push("name");
+      searchValues.push(searchTerm.trim());
+    }
+
+    if (categoryFilter) {
+      searchBy.push("category");
+      searchValues.push(categoryFilter);
+    }
+
+    if (statusFilter) {
+      searchBy.push("status");
+      searchValues.push(statusFilter);
+    }
+
+    const searchValue = searchValues.length > 0 ? searchValues[0] : "";
+
+    return {
+      search: searchValue,
+      search_by: searchBy,
+      operator: searchBy.length > 1 ? "and" : "and",
+      orderBy: sortBy,
+      order: sortOrder,
+      page: currentPage,
+      size: itemsPerPage,
+    };
+  };
 
   const getProductData = async () => {
     try {
-      // Build search_by array based on active filters
-      const searchBy: string[] = [];
-      if (searchTerm) searchBy.push("nama");
-      if (categoryFilter) searchBy.push("kategori");
-      if (statusFilter) searchBy.push("status");
+      const params = buildQueryParams();
 
-      const params: IParamsGetProduct = {
-        search: searchTerm || categoryFilter || statusFilter || "",
-        search_by: searchBy.length > 0 ? searchBy : [],
-        operator: "and",
-        orderBy: sortBy,
-        order: sortOrder,
-        page: currentPage,
-        size: itemsPerPage,
+      const queryParams: IParamsGetProduct = {
+        orderBy: params.orderBy,
+        order: params.order,
+        page: params.page,
+        size: params.size,
+        operator: params.operator,
       };
 
-      const request: any = await getProducts({ params: params });
+      if (params.search && params.search_by && params.search_by.length > 0) {
+        queryParams.search = params.search;
+        queryParams.search_by = params.search_by;
+      }
 
-      // Handle response structure { data: [...], pagination: {...} }
+      const request: any = await getProducts({ params: queryParams });
+
       if (request && request.data) {
         setProducts(request.data);
 
-        // Update pagination info from server
         if (request.pagination) {
           setPagination(request.pagination);
         }
       } else {
-        // Fallback if structure is different
         setProducts([]);
         setPagination({ page: 1, size: 10, total: 0, pages: 1 });
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching products:", error);
       setProducts([]);
       setPagination({ page: 1, size: 10, total: 0, pages: 1 });
     }
   };
 
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
   const handlePageChange = ({ selected }: { selected: number }) => {
-    setCurrentPage(selected + 1); // ReactPaginate uses 0-based index, API uses 1-based
+    setCurrentPage(selected + 1);
   };
 
   const handleItemsPerPageChange = (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to first page
+    setCurrentPage(1);
   };
 
-  // Get unique categories from products
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCategoryFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (e: any) => {
+    setStatusFilter(
+      e.target.value === "true" ? true : e.target.value === "false" ? false : ""
+    );
+    setCurrentPage(1);
+  };
+
+  const handleSortByChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(e.target.value);
+  };
+
+  const handleSortOrderToggle = () => {
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  };
+
   const categories = Array.from(
     new Set(products.map((p) => p.category).filter(Boolean))
   );
   const categoryOptions = categories.map((cat) => ({ label: cat, value: cat }));
 
   const statusOptions = [
-    { label: "Aktif", value: "aktif" },
-    { label: "Nonaktif", value: "nonaktif" },
+    { label: "Aktif", value: "true" },
+    { label: "Nonaktif", value: "false" },
   ];
 
   const sortOptions = [
-    { label: "Nama Produk", value: "nama" },
-    { label: "Kategori", value: "categori" },
-    { label: "Harga", value: "harga" },
-    { label: "Stok", value: "stokawal" },
+    { label: "Nama Produk", value: "name" },
+    { label: "Kategori", value: "category" },
+    { label: "Harga", value: "price" },
+    { label: "Stok", value: "stok" },
   ];
+
+  const handleSortColumn = (column: string) => {
+    if (sortBy === column) {
+      // Jika column sama, toggle order
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // Jika column berbeda, set column baru dan reset ke asc
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
 
   const callbackSubmit = (values: IProduct) => {
     setRefreshKey(nanoid());
@@ -183,9 +255,10 @@ function ProductsList() {
 
   const deleteProductById = async () => {
     try {
-      const resp = await deleteProduct(modalDelete?.data?.id);
+      const resp = await deleteProduct(modalDelete?.data?._id);
       console.log(resp);
-      setRefreshKey(nanoid()); // Generate new unique ID to trigger refresh
+      setRefreshKey(nanoid());
+
       handleCloseModalDelete();
     } catch (error) {
       console.error(error);
@@ -194,23 +267,51 @@ function ProductsList() {
 
   const handleEdit = (item: IProduct) => {
     setDataSelected(item);
-    handleShow();
-    console.log({ item });
-  };
-  // Helper function to get status label
-  const getStatusLabel = (status: any) => {
-    if (typeof status === "string") {
-      return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-    return status ? "Aktif" : "Nonaktif";
+    setIsEdit(true);
+    setIsDetail(false); 
+    setShow(true);
   };
 
-  // Helper function to get status type for badge
-  const getStatusType = (status: any): string => {
-    if (typeof status === "string") {
-      return status.toLowerCase();
+  const handleDetail = (item: IProduct) => {
+    setDataSelected(item);
+    setIsDetail(true);
+    setIsEdit(false); 
+    setShow(true);
+  };
+
+  const getStatusLabel = (status: any) => {
+    if (typeof status === "boolean") {
+      return status ? "Aktif" : "Nonaktif";
     }
-    return status ? "aktif" : "nonaktif";
+    if (typeof status === "string") {
+      const lowerStatus = status.toLowerCase();
+      if (lowerStatus === "true" || lowerStatus === "aktif") return "Aktif";
+      if (lowerStatus === "false" || lowerStatus === "nonaktif")
+        return "Nonaktif";
+      return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+    return "Nonaktif";
+  };
+
+  const getStatusType = (status: any): string => {
+    if (typeof status === "boolean") {
+      return status ? "aktif" : "nonaktif";
+    }
+    if (typeof status === "string") {
+      const lowerStatus = status.toLowerCase();
+      if (lowerStatus === "true" || lowerStatus === "aktif") return "aktif";
+      return "nonaktif";
+    }
+    return "nonaktif";
+  };
+
+  const isStatusActive = (status: any): boolean => {
+    if (typeof status === "boolean") return status;
+    if (typeof status === "string") {
+      const lowerStatus = status.toLowerCase();
+      return lowerStatus === "true" || lowerStatus === "aktif";
+    }
+    return false;
   };
 
   return (
@@ -242,10 +343,7 @@ function ProductsList() {
                       type="text"
                       placeholder="Cari produk"
                       value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1); // Reset to first page on search
-                      }}
+                      onChange={handleSearch}
                     />
                   </SearchInputWrapper>
                 </Col>
@@ -255,10 +353,8 @@ function ProductsList() {
                     options={categoryOptions}
                     version="simple"
                     style={{ minWidth: "180px" }}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                      setCategoryFilter(e.target.value);
-                      setCurrentPage(1); // Reset to first page on filter
-                    }}
+                    onChange={handleCategoryChange}
+                    value={categoryFilter}
                   />
                 </Col>
                 <Col md={4}>
@@ -267,10 +363,8 @@ function ProductsList() {
                     options={statusOptions}
                     version="simple"
                     style={{ minWidth: "160px" }}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                      setStatusFilter(e.target.value);
-                      setCurrentPage(1); // Reset to first page on filter
-                    }}
+                    onChange={handleStatusChange}
+                    value={statusFilter}
                   />
                 </Col>
               </Row>
@@ -278,22 +372,16 @@ function ProductsList() {
             <Col md={6} className="d-flex justify-content-end">
               <SortContainer>
                 <span style={{ marginRight: "8px", fontSize: "14px" }}>
-                  Urutkan:
+                  Urutkan Berdasarkan:
                 </span>
                 <FormSelectControl
-                  placeholder="Nama Produk"
                   options={sortOptions}
                   version="simple"
                   style={{ minWidth: "150px" }}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setSortBy(e.target.value)
-                  }
+                  onChange={handleSortByChange}
+                  value={sortBy}
                 />
-                <SortButton
-                  onClick={() =>
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                  }
-                >
+                <SortButton onClick={handleSortOrderToggle}>
                   {sortOrder === "asc" ? "↑" : "↓"}{" "}
                   {sortOrder === "asc" ? "Asc" : "Desc"}
                 </SortButton>
@@ -304,12 +392,35 @@ function ProductsList() {
           <StyledTable>
             <thead>
               <tr>
-                <th style={{ width: "20%" }}>Nama Produk</th>
-                <th style={{ width: "15%" }}>Kategori</th>
-                <th style={{ width: "10%" }}>Stok</th>
-                <th style={{ width: "15%" }}>Harga (Rp)</th>
+                <th
+                  style={{ width: "20%" }}
+                  onClick={() => handleSortColumn("name")}
+                >
+                  Nama Produk{" "}
+                  {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  style={{ width: "15%" }}
+                  onClick={() => handleSortColumn("category")}
+                >
+                  Kategori{" "}
+                  {sortBy === "category" && (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  style={{ width: "10%" }}
+                  onClick={() => handleSortColumn("stok")}
+                >
+                  Stok {sortBy === "stock" && (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  style={{ width: "15%" }}
+                  onClick={() => handleSortColumn("price")}
+                >
+                  Harga (Rp){" "}
+                  {sortBy === "price" && (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
                 <th style={{ width: "10%" }}>Status</th>
-                <th style={{ width: "10%", textAlign: "center" }}></th>
+                <th style={{ width: "10%" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -335,20 +446,17 @@ function ProductsList() {
                       <td>{(item.price || 0).toLocaleString("id-ID")}</td>
                       <td>
                         <StatusBadge status={getStatusType(item.status)}>
-                          {item.status ? (
+                          {isStatusActive(item.status) ? (
                             <img src="/check.svg" alt="check" />
                           ) : (
                             <img src="/check-abu.svg" alt="check" />
                           )}
-
                           {getStatusLabel(item.status)}
                         </StatusBadge>
                       </td>
                       <td>
                         <ActionCell>
-                          <ActionButton
-                            onClick={() => navigate(String(item?._id))}
-                          >
+                          <ActionButton onClick={() => handleDetail(item)}>
                             Lihat Detail
                           </ActionButton>
 
@@ -385,7 +493,9 @@ function ProductsList() {
                 onChange={handleItemsPerPageChange}
                 value={itemsPerPage}
               >
+                <option value={5}>5</option>
                 <option value={10}>10</option>
+                <option value={15}>15</option>
                 <option value={20}>20</option>
                 <option value={50}>50</option>
               </ItemsPerPageSelect>
@@ -408,7 +518,7 @@ function ProductsList() {
               breakLabel="..."
               breakClassName="page-item"
               breakLinkClassName="page-link"
-              forcePage={currentPage - 1} // ReactPaginate uses 0-based index
+              forcePage={currentPage - 1}
               pageRangeDisplayed={3}
               marginPagesDisplayed={2}
             />
@@ -420,7 +530,7 @@ function ProductsList() {
         <Modal.Header>
           <DFlexColumn className="w-100 gap-1">
             <DFlexJustifyBetween>
-              <Modal.Title className="mb-0">Form Product</Modal.Title>
+              <Modal.Title className="mb-0">{isDetail === true ? "Detail Produk" : isEdit === true ? "Edit Produk" : "Tambah Produk"}</Modal.Title>
               <DFlexALignCenter
                 className="px-2"
                 onClick={handleClose}
@@ -439,6 +549,8 @@ function ProductsList() {
             onClose={handleClose}
             callbackSubmit={callbackSubmit}
             dataSelected={dataSelected}
+            onDetail={isDetail}
+            onEdit={isEdit}
           />
         </Modal.Body>
       </Modal>

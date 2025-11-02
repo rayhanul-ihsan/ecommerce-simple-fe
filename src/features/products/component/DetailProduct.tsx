@@ -13,7 +13,7 @@ import LazyImage from "../../../components/LazyLoad/LazyImage";
 
 export default function DetailProduct() {
   const { product: item } = useSelector((state: any) => state.product);
-  const [quantity, setQuantity] = useState(item?.stok || 1);
+  const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(item?.image.split(",")[0]);
 
   const handleQuantity = (type: "plus" | "minus") => {
@@ -79,44 +79,57 @@ export default function DetailProduct() {
         <Col md={7}>
           <Card className="">
             <Card.Body>
-              <h4 className="fw-bold">{item?.name}</h4>
-              <div className="text-warning mb-1">
-                ⭐⭐⭐⭐☆ 4.5 • 30 Terjual
-              </div>
-              <h3 className="text-danger fw-bold mb-2">
-                Rp {(item?.price).toLocaleString("id-ID")}
-              </h3>
-              <small className="text-muted d-block mb-3">
-                Garansi Tiba: 4 - 6 September
-              </small>
+              <Row className="g-4">
+                <Col md={12}>
+                  <h4 className="fw-bold">{item?.name}</h4>
+                </Col>
+                <Col md={12}>
+                  <div className="text-warning mb-1">
+                    ⭐⭐⭐⭐☆ 4.5 • 30 Terjual
+                  </div>
+                </Col>
+                <Col md={12}>
+                  <h3 className="text-danger fw-bold mb-2">
+                    Rp {(item?.price).toLocaleString("id-ID")}
+                  </h3>
+                </Col>
+                <Col md={12}>
+                  <small className="text-muted d-block mb-3">
+                    Garansi Tiba: 4 - 6 September
+                  </small>
+                </Col>
 
-              {/* Quantity */}
-              <div className="d-flex align-items-center mb-3">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => handleQuantity("minus")}
-                >
-                  -
-                </Button>
-                <Form.Control
-                  value={quantity}
-                  readOnly
-                  className="mx-2 text-center"
-                  style={{ width: "60px" }}
-                />
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => handleQuantity("plus")}
-                >
-                  +
-                </Button>
-              </div>
-
-              <Button variant="warning" className="w-100 fw-semibold">
-                Beli Produk
-              </Button>
+                {/* Quantity */}
+                <Col md={12}>
+                  <div className="d-flex align-items-center mb-3">
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => handleQuantity("minus")}
+                    >
+                      -
+                    </Button>
+                    <Form.Control
+                      value={quantity}
+                      readOnly
+                      className="mx-2 text-center"
+                      style={{ width: "60px" }}
+                    />
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => handleQuantity("plus")}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </Col>
+                <Col md={12}>
+                  <Button variant="warning" className="w-100 fw-semibold">
+                    Beli Produk
+                  </Button>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>

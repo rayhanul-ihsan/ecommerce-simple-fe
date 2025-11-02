@@ -58,5 +58,5 @@ export const updateProduct = async (
 
 // --- DELETE ---
 export const deleteProduct = async (id: string): Promise<void> => {
-  await axios.delete(`${API_BASE_URL}/products/${id}`, getAuthHeader());
+  await axios.delete(`${API_BASE_URL}/products/delete/${id}`, getAuthHeader());
 };

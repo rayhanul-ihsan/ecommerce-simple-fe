@@ -49,6 +49,7 @@ import FormSelectControl from "../../../components/input/FormSelectControl";
 import FiSearchIcon from "../../../assets/icons/FiSearchIcon";
 import DropdownActionData from "../../../components/dropdown/DropdownActionData";
 import ModalConfirm from "../../../components/modal/ModalConfirm";
+import { nanoid } from "nanoid";
 
 function UserManagement() {
   const navigate = useNavigate();
@@ -56,10 +57,10 @@ function UserManagement() {
   const [users, setUsers] = useState<IUser[]>([]);
   const [show, setShow] = useState(false);
   const [dataSelected, setDataSelected] = useState<IUser | undefined>();
-  const triggerGet = useRef<number>(0);
+  const [refreshKey, setRefreshKey] = useState(nanoid());
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<any>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,7 +91,7 @@ function UserManagement() {
   useEffect(() => {
     getUsersData();
   }, [
-    triggerGet.current,
+    refreshKey,
     searchTerm,
     statusFilter,
     sortOrder,
@@ -98,33 +99,55 @@ function UserManagement() {
     itemsPerPage,
   ]);
 
+  const buildQueryParams = (): IParamsGetUser => {
+    const searchBy: string[] = [];
+    const searchValues: string[] = [];
+
+    // Build search parameters - pisahkan search term dan filter
+    if (searchTerm.trim()) {
+      searchBy.push("username");
+      searchValues.push(searchTerm.trim());
+    }
+
+    if (statusFilter !== "") {
+      searchBy.push("status");
+      searchValues.push(statusFilter);
+    }
+
+    // Gunakan searchValue pertama (prioritas ke search term)
+    const searchValue = searchValues.length > 0 ? searchValues[0] : "";
+
+    return {
+      search: searchValue,
+      search_by: searchBy,
+      operator: searchBy.length > 1 ? "and" : "and",
+      orderBy: "created_at",
+      order: sortOrder,
+      page: currentPage,
+      size: itemsPerPage,
+    };
+  };
+
   const getUsersData = async () => {
     try {
-      const searchBy: string[] = [];
-      let searchValue = "";
+      const params = buildQueryParams();
 
-      // Build search parameters
-      if (searchTerm) {
-        searchBy.push("username");
-        searchValue = searchTerm;
-      }
-
-      if (statusFilter) {
-        searchBy.push("status");
-        searchValue = statusFilter === "Aktif" ? "true" : "false";
-      }
-
-      const params: IParamsGetUser = {
-        search: searchValue,
-        search_by: searchBy.length > 0 ? searchBy : [],
-        operator: "and",
-        orderBy: "createdAt",
-        order: sortOrder,
-        page: currentPage,
-        size: itemsPerPage,
+      // Build query params dengan kondisi
+      const queryParams: IParamsGetUser = {
+        orderBy: params.orderBy,
+        order: params.order,
+        page: params.page,
+        size: params.size,
+        operator: params.operator,
       };
 
-      const request: any = await getUsers({ params });
+      // Hanya tambahkan search dan search_by jika ada nilai
+      if (params.search && params.search_by && params.search_by.length > 0) {
+        queryParams.search = params.search;
+        queryParams.search_by = params.search_by;
+      }
+
+      const request: any = await getUsers({ params: queryParams });
 
       // Handle response structure { data: [...], pagination: {...} }
       if (request && request.data) {
@@ -157,14 +180,22 @@ function UserManagement() {
     setCurrentPage(1); // Reset to first page
   };
 
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    // Convert string value to boolean or empty string
+    setStatusFilter(
+      e.target.value === "true" ? true : e.target.value === "false" ? false : ""
+    );
+    setCurrentPage(1);
+  };
+
   const statusOptions = [
     { label: "Semua Status", value: "" },
-    { label: "Aktif", value: "Aktif" },
-    { label: "Nonaktif", value: "Nonaktif" },
+    { label: "Aktif", value: "true" },
+    { label: "Nonaktif", value: "false" },
   ];
 
   const callbackSubmit = (values: IUser) => {
-    triggerGet.current = Date.now();
+    setRefreshKey(nanoid());
     handleClose();
   };
 
@@ -194,7 +225,7 @@ function UserManagement() {
     try {
       if (modalDelete?.data?._id) {
         await deleteUser(String(modalDelete.data._id));
-        triggerGet.current = Date.now();
+        setRefreshKey(nanoid());
         handleCloseModalDelete();
       }
     } catch (error) {
@@ -255,12 +286,9 @@ function UserManagement() {
                   placeholder="Semua Status"
                   options={statusOptions}
                   version="simple"
-                  value={statusFilter}
+                  value={statusFilter === true ? "true" : statusFilter === false ? "false" : ""}
                   style={{ minWidth: "160px" }}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
+                  onChange={handleStatusChange}
                 />
               </DFlexJustifyStart>
             </Col>
